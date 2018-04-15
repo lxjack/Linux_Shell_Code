@@ -1,4 +1,5 @@
 #!/bin/bash
+#while loop,compute 1+2+...+100=?
 
 i=1
 sum=0
