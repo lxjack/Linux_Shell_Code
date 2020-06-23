@@ -120,30 +120,64 @@ function mywork()
 
 
 
-二、sed使用
-1.列出文件的指定行数
+二、sed使用   插入---（行前行后插入）---删除---（按行删除）---显示---（按行显示）---替换---（按行替换 匹配内容替换）   done
+1.插入新行(i a)
+1.1在指定行的前一行插入新行
+root@/home/jack/workspace #sed -i '3i name=$1' au.sh 
+
+1.2在指定行的后一行插入新行
+root@/home/jack/workspace #sed -i '1a name=$1' au.sh
+
+
+2.删除指定行(d)
+2.1指定行号进行删除
+root@/home/jack/workspace #sed -i '3d' au.sh
+root@/home/jack/workspace #grep -n  '.*' au.sh | sed '2,$d'
+1:#!/bin/bash
+
+2.2匹配删除对应的行
+root@/home/jack/workspace #sed -i '/name=/d' au.sh
+
+
+3.显示指定行(p)
 命令格式:sed -n 'num1,num2p' 文件
-1.1列出文件/etc/passwd的5至7行
+3.1列出文件/etc/passwd的5至7行
 [root@localhost ~]# nl /etc/passwd | sed -n '5,7p'
      5	lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
      6	sync:x:5:0:sync:/sbin:/bin/sync
      7	shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown
-1.2列出文件的最后一行
+	 
+3.2列出文件的最后一行
 [root@localhost ~]# sed -n '$p' /etc/passwd
 jack:x:500:500:jack_PC:/home/jack:/bin/bash
-1.3列出文件的最后两行
+
+3.3列出文件的最后两行
 [root@localhost ~]# sed -n '30,$p' /etc/passwd
 tcpdump:x:72:72::/:/sbin/nologin
 jack:x:500:500:jack_PC:/home/jack:/bin/bash
 
 
-2.获取匹配行的行号
+4.替换(c   s)
+行替换(c)
+4.1指定行号进行行替换
+root@/home/jack/workspace #sed -i '3c name=$3' au.sh 
+4.2匹配内容进行行替换
+root@/home/jack/workspace #sed -i '/name=/c name=$1' au.sh
+
+部分数据查找替换(s)
+命令格式:sed 's/要被替换的被查找字符串/新字符串/g' 文件
+4.3查找替换（除了替换为空外，还可以替换为其它字符）
+root@/home/jack/workspace #ifconfig eth0 | grep "Bcast"
+          inet addr:192.168.225.129  Bcast:192.168.225.255  Mask:255.255.255.0
+root@/home/jack/workspace #ifconfig eth0 | grep "Bcast" | sed 's/^.*addr://g' | sed 's/[ \t]*Bcast.*//g'
+192.168.225.129
+
+
+5.获取匹配行行号
 命令格式:sed -n '/要被替换的被查找字符串/='  文件
-[root@localhost ~]# sed -n '/jack/=' /etc/passwd
-31
-[root@localhost ~]# sed -n '/\/bin\/bash/=' /etc/passwd
+[root@localhost ~]# sed -n '/root/=' /etc/passwd
 1
-31
+
 获取最后一行的行号
 root@/home/jack/workspace #sed -n '$=' au.sh 
 12
@@ -151,48 +185,8 @@ root@/home/jack/workspace #cat au.sh | wc -l
 12
 
 
-3.新增一行
-3.1在指定行的后面新增一行
-root@/home/jack/workspace #sed -i '1a name=$1' au.sh
 
-3.2在指定行的前面新增一行
-root@/home/jack/workspace #sed -i '3i name=$1' au.sh 
-
-
-4.按行进行删除文本
-4.1指定行号进行删除
-root@/home/jack/workspace #sed -i '3d' au.sh
-root@/home/jack/workspace #grep -n  '.*' au.sh | sed '2,$d'
-1:#!/bin/bash
-
-4.2匹配删除对应的行
-root@/home/jack/workspace #sed -i '/name=/d' au.sh
-
-
-5.行替换
-5.1指定行号进行行替换
-root@/home/jack/workspace #sed -i '3c name=$3' au.sh 
-
-5.2匹配内容进行行替换
-root@/home/jack/workspace #sed -i '/name=/c name=$1' au.sh
-
-
-6.部分数据的查找替换
-命令格式:sed 's/要被替换的被查找字符串/新字符串/g' 文件
-6.1查找替换（除了替换为空外，还可以替换为其它字符）
-root@/home/jack/workspace #ifconfig eth0 | grep "Bcast"
-          inet addr:192.168.225.129  Bcast:192.168.225.255  Mask:255.255.255.0
-root@/home/jack/workspace #ifconfig eth0 | grep "Bcast" | sed 's/^.*addr://g' | sed 's/[:blank:]*Bcast.*//g'
-192.168.225.129
-
-6.2将注释行替换为空
-root@/home/jack/workspace #head -1 para_input.sh | sed 's/#.*//g'
-
-root@/home/jack/workspace #
-
-
-
-三、awk使用（字段分割处理工具）
+三、awk使用（字段分割处理工具）     todo  
 1.获取root用户的最新登陆时间
 root@/home/jack/workspace #who -m | grep root | awk '{print $1 "  " $3 " " $4}'
 root  2018-09-23 05:21
@@ -235,7 +229,6 @@ ex: */20	 2,4,6	 15-20	 *   *  sh collect_message.sh		每个月的15至20日的2
 crontab -e		编辑循环任务
 crontab	-l		查看定时任务
 crontab	-r		删除所有定时任务（不推荐使用  可以使用crontab -e进行编辑修改）
-
 
 
 五、正则表达式
