@@ -186,13 +186,126 @@ root@/home/jack/workspace #cat au.sh | wc -l
 
 
 
-三、awk使用（字段分割处理工具）     todo  
-1.获取root用户的最新登陆时间
-root@/home/jack/workspace #who -m | grep root | awk '{print $1 "  " $3 " " $4}'
-root  2018-09-23 05:21
-2.获取主机IP,制定awk分隔符
-root@/home/jack/workspace #ifconfig eth0 | grep "inet addr" | awk '{print $2}' | awk -F ":" '{print $NF}'
-192.168.224.111
+三、awk使用（awk处理流程  字段分隔符指定 条件  动作）
+awk '条件类型1 {动作1} 条件类型2 {动作2}'  filename
+
+1.awk处理流程：
+1.1.读入一行，并将这行数据填入$0,$1,$2,$3变量当中；
+1.2.根据条件判断这行是否需要进行后面动作；
+1.3.继续处理后面的行.
+
+
+2.指定字段分隔符：
+awk -F "|" 
+
+[root:/home/workspace]#info="10001|CoyoteInc.|200MapleLane|Detroit|MI|44444|USA|YLee|ylee@coyote.com"
+[root:/home/workspace]#echo $info | awk -F "|" '{print $1,"\t",$NF}'
+10001    ylee@coyote.com
+[root:/home/workspace]#
+
+
+3.条件：
+3.1.值大小判断
+>,>=,<,<=,==,!=
+[root:/home/workspace]#awk -F: '$3<=10 {print $0}' passwd
+root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+
+
+3.2.正则匹配
+3.2.1.一行之中匹配
+[root:/home/workspace]#cat -n passwd | awk '/root/ {print $0}'
+     1  root:x:0:0:root:/root:/bin/bash
+    10  operator:x:11:0:operator:/root:/sbin/nologin
+    44  roo:x:1000:1000:root:/home/roo:/bin/bash
+[root:/home/workspace]#
+
+3.2.2.行内的匹配与不匹配
+[root:/home/workspace]#awk '!/nologin$/ {print $0}' passwd | wc -l
+5
+[root:/home/workspace]#awk '/nologin$/ {print $0}' passwd | wc -l
+39
+
+3.2.3.指定字段匹配
+~：左侧的字段是否被模式匹配
+[root:/home/workspace]#awk -F: '($1~/root/)&&($NF~/bash/) {print $0}' /etc/passwd
+root:x:0:0:root:/root:/bin/bash
+
+!~：左侧的字段是否不能被模式匹配
+[root:/home/workspace]#awk -F: '($1!~/root/)&&($NF~/bash/) {print $0}' /etc/passwd
+roo:x:1000:1000:root:/home/roo:/bin/bash
+[root:/home/workspace]#
+
+
+3.2.4.逻辑操作符：
+&&：与
+[root:/home/workspace]#cat -n passwd | awk 'NR<=10&&NR>=5 {print $0}'
+     5  lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
+     6  sync:x:5:0:sync:/sbin:/bin/sync
+     7  shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown
+     8  halt:x:7:0:halt:/sbin:/sbin/halt
+     9  mail:x:8:12:mail:/var/spool/mail:/sbin/nologin
+    10  operator:x:11:0:operator:/root:/sbin/nologin
+[root:/home/workspace]#
+
+
+||：或
+[root:/home/workspace]#cat -n passwd | awk 'NR<=3||NR>=42 {print $0}'
+     1  root:x:0:0:root:/root:/bin/bash
+     2  bin:x:1:1:bin:/bin:/sbin/nologin
+     3  daemon:x:2:2:daemon:/sbin:/sbin/nologin
+    42  tcpdump:x:72:72::/:/sbin/nologin
+    43  avahi:x:70:70:Avahi mDNS/DNS-SD Stack:/var/run/avahi-daemon:/sbin/nologin
+    44  roo:x:1000:1000:root:/home/roo:/bin/bash
+[root:/home/workspace]#
+
+
+!：非
+[root:/home/workspace]#cat -n passwd | awk '!(NR>=3) {print $0}'
+     1  root:x:0:0:root:/root:/bin/bash
+     2  bin:x:1:1:bin:/bin:/sbin/nologin
+[root:/home/workspace]#
+
+
+
+4.动作
+print
+输出格式：print item1,item2 ...
+备注：使用逗号作为分隔符；输出item可以是字符串、內建变量、awk表达式；若省略item，则显示$0整行；
+
+printf
+格式化输出：printf FORMAT, item1, item2...按位放在format中。
+注意事项：format必须要给出；如需换行，必须要显示写出；format中需要为后面每个item指定格式符；
+
+格式符：
+%c：显示字符的ASCII值
+%d：显示十进制整数
+%e：科学计数法数值显示
+%f：显示为浮点数
+%g：以科学计数法显示浮点数
+%s：显示字符串
+%u：显示无符号整数
+%%：显示%自身
+
+控制语句if：
+if(condition){statement}
+if(condition){statement} else {statements}
+
+[root:/home/workspace]#awk -F ":" '{if ($NF~/bash$/) {$1=0;print $1,"\t",$NF} else {$1=1;print $1,"\t",$NF}}' passwd
+0        /bin/bash
+1        /sbin/nologin
+1        /sbin/nologin
+0        /bin/bash
+
+BEGIN/END模式：BEGIN{}表示仅在开始处理文件中的文本之前执行一次的程序，例如打印表头。END{}表示文本处理完成之后执行一次，例如汇总数据。
+[root:/home/workspace]#awk -F: 'BEGIN{i=0;j=0};{if ($NF~/nologin$/){i++}else{j++}}; END{print i, j}' passwd
+39 5
+[root:/home/workspace]#
+[root:/home/workspace]#awk -F: 'BEGIN{i=1;j=1};{if ($NF~/nologin$/){i++}else{j++}}; END{print i, j}' passwd
+40 6
+[root:/home/workspace]#
+
+参考：https://www.cnblogs.com/zimskyzeng/p/11630071.html
 
 
 
@@ -231,5 +344,5 @@ crontab	-l		查看定时任务
 crontab	-r		删除所有定时任务（不推荐使用  可以使用crontab -e进行编辑修改）
 
 
-五、正则表达式
+五、正则表达式(todo)
 通过一些特殊的字符以及搭载着量词，进行字符串的模式匹配工作。
